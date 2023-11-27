@@ -1,0 +1,29 @@
+name: 'Build'
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+env:
+  IMAGE_TAG_GIT_REF: ${{ github.event_name == 'push' && 'latest' || github.event_name == 'pull_request' && format('pr_{0}', github.event.number) || github.ref_name }}
+
+jobs:
+  build:
+    runs-on: build-general-runner
+    name: Build image
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Kaniko build
+        uses: retrain-ai/github-devops-actions/kaniko-build@main
+        with:
+          image_repository: ${{ vars.RETRAIN_IMAGE_REPO_PREFIX }}/${{ github.event.repository.name }}
+          image_tag: ${{ env.IMAGE_TAG_GIT_REF }}
+          additional_image_tags: |-
+            ${{ github.sha }}
+          build_context: 'cloudrun-malware-scanner'
+          github_token: ${{ secrets.GITHUB_TOKEN }}
